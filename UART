@@ -1,0 +1,65 @@
+unsigned char UART0_PutChar(unsigned char Ch)
+{
+ if(Ch=='\n')
+ {
+ while(!(U0LSR & 0x20));
+U0THR=0x0D;
+ }
+ while(!(U0LSR & 0x20));
+ return (U0THR=Ch);
+}
+
+ unsigned char UART1_GetChar(void)
+ {
+ while(!(U1LSR & 0x01));
+return(U1RBR);
+ }
+ unsigned char UART1_PutChar(unsigned char Ch)
+{
+ while(!(U1LSR & 0x20));
+ if(Ch=='\n')
+ Ch=0x0D;
+ U1THR=Ch;
+ return Ch;
+}
+
+void UART1_PutS(unsigned char *Ch)
+{
+ while(*Ch)
+ UART1_PutChar(*Ch++);
+}
+
+ void UART1_isr(void) __irq
+{
+UART0_PutChar(UART1_GetChar());
+VICVectAddr=0;
+}
+
+
+void Uart0Init()
+{
+ PINSEL0 |=0x05;
+ U0FCR  = 0x07;
+ U0LCR = 0x83;
+ U0DLL = 0x62;
+ U0DLM = 0;
+ U0LCR = 0x03;
+}
+
+
+void Uart1Init()
+{
+PINSEL0 |=0x00050000;
+ U1FCR = 0x07;
+ U1LCR = 0x83;
+ U1DLL = 0x62;
+ U1DLM = 0;
+ U1LCR = 0x03;
+
+
+ U1IER = 0x01;
+ VICVectCntl1= 0x20 | 7;
+
+ VICVectAddr1=(unsigned int)UART1_isr;
+ VICIntEnable|=1<<7;
+}
